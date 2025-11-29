@@ -16,6 +16,7 @@ const ResourcePage = () => {
   const { toast } = useToast();
   const resourcesRecord = useResourceStore((state) => state.resources);
   const requestResupply = useResourceStore((state) => state.requestResupply);
+  const upsertResource = useResourceStore((state) => state.upsertResource);
   const code = (id || "").toUpperCase();
   const resourceFromStore = resourcesRecord[code];
   const [fetchedResource, setFetchedResource] = useState<ResourceCard | null>(null);
@@ -27,7 +28,7 @@ const ResourcePage = () => {
     points: historyPoints,
     loading: historyLoading,
     error: historyError,
-  } = useResourceHistory(resource?.id);
+  } = useResourceHistory(code);
 
   useEffect(() => {
     if (resourceFromStore || !code) return;
@@ -37,6 +38,7 @@ const ResourcePage = () => {
         setLoading(true);
         const data = await fetchResourceByCode(code);
         setFetchedResource(data);
+        upsertResource(data);
       } catch (error) {
         console.error("Failed to load resource", error);
       } finally {
@@ -45,7 +47,7 @@ const ResourcePage = () => {
     };
 
     load();
-  }, [code, resourceFromStore]);
+  }, [code, resourceFromStore, upsertResource]);
 
   useEffect(() => {
     if (!resource) {
