@@ -1,0 +1,46 @@
+# Dependencias
+node_modules/
+jspm_packages/
+
+# Builds
+dist/
+build/
+.next/
+.out/
+.cache/
+.temp/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Entornos
+.env
+.env.*
+!.env.example
+
+# Sistemas operativos
+.DS_Store
+Thumbs.db
+
+# Editores / IDE
+.vscode/
+.idea/
+*.swp
+
+# TypeScript
+*.tsbuildinfo
+
+# Monorepos / herramientas
+turbo/
+.turbo/
+.pnp.*
