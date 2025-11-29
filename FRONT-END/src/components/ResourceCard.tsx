@@ -7,21 +7,20 @@ import { useNavigate } from 'react-router-dom';
 
 const RESOURCE_METADATA: Record<
   string,
-  { icon: string; unit: string; description: string }
+  { icon: string; description: string }
 > = {
   OXYGEN: {
     icon: '🌬️',
-    unit: '%',
     description: 'Oxígeno disponible en hábitat',
   },
-  WATER: { icon: '💧', unit: '%', description: 'Reservas de agua tratada' },
-  FOOD: { icon: '🍎', unit: '%', description: 'Comida lista para consumo' },
-  ENERGY: { icon: '⚡', unit: '%', description: 'Capacidad de energía' },
+  WATER: { icon: '💧', description: 'Reservas de agua tratada' },
+  FOOD: { icon: '🍎', description: 'Comida lista para consumo' },
+  ENERGY: { icon: '⚡', description: 'Capacidad de energía' },
 };
 
 interface ResourceCardProps {
   resource: ResourceCardDto;
-  onRequestResupply: () => void;
+  onRequestResupply: (resource: ResourceCardDto) => void;
 }
 
 export const ResourceCard = ({
@@ -32,27 +31,34 @@ export const ResourceCard = ({
   const metadata =
     RESOURCE_METADATA[resource.id] ?? ({
       icon: '🛰️',
-      unit: '%',
       description: 'Recurso monitoreado',
     } as const);
 
   const percentage = Math.min(resource.currentPercentage, 100);
   const isCritical = resource.isCritical;
   const warningThreshold = resource.criticalPercentage + 10;
+  const optimalThreshold = 95;
   const isWarning = !isCritical && percentage <= warningThreshold;
-  const trend = resource.consumptionRatePerMinute;
+  const isOptimal = !isCritical && !isWarning && percentage >= optimalThreshold;
+  const trend = resource.totalConsumptionPerHour;
   const lastUpdated = new Date(resource.lastUpdated).toLocaleTimeString();
+  const hoursLeft = resource.autonomyHours;
+  const daysLeft =
+    hoursLeft === null ? null : Number((hoursLeft / 24).toFixed(1));
+  const autonomyLabel =
+    hoursLeft === null
+      ? 'Autonomía estable'
+      : `${hoursLeft.toFixed(1)} h${
+          daysLeft !== null ? ` (${daysLeft} d)` : ''
+        }`;
 
-  const getStatusColor = () => {
-    if (isCritical) return 'text-critical';
-    if (isWarning) return 'text-warning';
-    return 'text-success';
-  };
+  const getStatusColor = () => 'text-foreground';
 
   const getProgressColor = () => {
     if (isCritical) return 'bg-critical';
     if (isWarning) return 'bg-warning';
-    return 'bg-success';
+    if (isOptimal) return 'bg-success';
+    return 'bg-muted-foreground';
   };
 
   return (
@@ -76,9 +82,25 @@ export const ResourceCard = ({
             <p className="text-xs text-muted-foreground font-mono">
               ID: {resource.id}
             </p>
-            <p className="text-xs text-muted-foreground">
-              {metadata.description}
-            </p>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">
+                {metadata.description}
+              </p>
+              <p className="text-xs text-muted-foreground font-mono">
+                Disponible: {(resource.currentQuantity ?? 0).toLocaleString()} {resource.unit}
+              </p>
+              <p className="text-xs text-muted-foreground font-mono">
+                Capacidad máx.:{' '}
+                {resource.maxCapacity !== null
+                  ? resource.maxCapacity.toLocaleString()
+                  : 'N/D'}{' '}
+                {resource.unit}
+              </p>
+              <p className="text-xs text-muted-foreground font-mono">
+                Ventana segura ({resource.safeWindowHours}h):{' '}
+                {resource.safetyStockAmount.toLocaleString()} {resource.unit}
+              </p>
+            </div>
           </div>
 
           {isCritical && (
@@ -95,7 +117,7 @@ export const ResourceCard = ({
               {percentage.toFixed(2)}%
             </span>
             <span className="text-sm text-muted-foreground">
-              Umbral crítico: {resource.criticalPercentage}%
+              Autonomía: {autonomyLabel}
             </span>
           </div>
 
@@ -107,13 +129,21 @@ export const ResourceCard = ({
             />
           </div>
 
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">
-              Consumo: -{Math.abs(trend).toFixed(2)}%/min
-            </span>
+          <div className="flex flex-col gap-1 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">
+                Consumo neto:{' '}
+                {trend.toFixed(2)} {resource.unit}/h
+              </span>
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <TrendingDown className="h-3 w-3" />
+                Actualizado: {lastUpdated}
+              </div>
+            </div>
             <div className="flex items-center gap-1 text-muted-foreground">
-              <TrendingDown className="h-3 w-3" />
-              Actualizado: {lastUpdated}
+              Por persona:{' '}
+              {resource.perCapitaConsumptionPerHour.toFixed(2)}{' '}
+              {resource.unit}/h
             </div>
           </div>
         </div>
@@ -121,7 +151,7 @@ export const ResourceCard = ({
         <Button
           onClick={(event) => {
             event.stopPropagation();
-            onRequestResupply();
+            onRequestResupply(resource);
           }}
           variant={isCritical ? 'destructive' : 'secondary'}
           className={`w-full font-semibold ${isCritical ? 'glow-critical' : ''}`}

@@ -12,9 +12,17 @@ export interface ResourceCard {
   statusId: string;           // uuid
   name: string;               // 'Oxígeno (O₂)'
   currentPercentage: number;
+  unit: string;
+  currentQuantity: number | null;
+  maxCapacity: number | null;
   criticalPercentage: number;
   isCritical: boolean;
-  consumptionRatePerMinute: number;
+  totalConsumptionPerHour: number;
+  perCapitaConsumptionPerHour: number;
+  autonomyHours: number | null;
+  safeWindowHours: number;
+  safetyStockAmount: number;
+  population: number;
   lastUpdated: string;
 }
 
@@ -27,17 +35,21 @@ export interface ResourceHistoryPoint {
 export interface CreateResourcePayload {
   code: string;
   displayName: string;
-  currentPercentage: number;
-  criticalPercentage: number;
-  consumptionRatePerMinute: number;
+  unit: string;
+  currentAmount: number;
+  maxCapacity: number;
+  perCapitaConsumptionPerHour: number;
+  safeWindowHours?: number;
   isCritical?: boolean;
 }
 
 export interface UpdateResourcePayload {
   displayName?: string;
-  currentPercentage?: number;
-  criticalPercentage?: number;
-  consumptionRatePerMinute?: number;
+  unit?: string;
+  currentAmount?: number;
+  maxCapacity?: number;
+  perCapitaConsumptionPerHour?: number;
+  safeWindowHours?: number;
   isCritical?: boolean;
 }
 

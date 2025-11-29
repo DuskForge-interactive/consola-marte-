@@ -8,22 +8,34 @@ export class UpdateResourceDto {
   displayName?: string;
 
   @ApiPropertyOptional({
-    example: 75.2,
-    description: 'New current percentage value',
+    example: 'L',
+    description: 'Updated measurement unit',
   })
-  currentPercentage?: number;
+  unit?: string;
 
   @ApiPropertyOptional({
-    example: 18,
-    description: 'New critical threshold percentage',
+    example: 4100,
+    description: 'Updated current amount available',
   })
-  criticalPercentage?: number;
+  currentAmount?: number;
 
   @ApiPropertyOptional({
-    example: 0.21,
-    description: 'New consumption rate per minute',
+    example: 5000,
+    description: 'Updated maximum storage capacity',
   })
-  consumptionRatePerMinute?: number;
+  maxCapacity?: number;
+
+  @ApiPropertyOptional({
+    example: 2.1,
+    description: 'Updated per-capita consumption per hour',
+  })
+  perCapitaConsumptionPerHour?: number;
+
+  @ApiPropertyOptional({
+    example: 72,
+    description: 'Updated safety window in hours',
+  })
+  safeWindowHours?: number;
 
   @ApiPropertyOptional({
     example: false,

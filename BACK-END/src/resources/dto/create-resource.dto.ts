@@ -14,22 +14,36 @@ export class CreateResourceDto {
   displayName: string;
 
   @ApiProperty({
-    example: 82.5,
-    description: 'Current percentage (0-100)',
+    example: 'L',
+    description: 'Unit used to measure the resource (L, kg, kWh, etc.)',
   })
-  currentPercentage: number;
+  unit: string;
 
   @ApiProperty({
-    example: 20,
-    description: 'Critical threshold percentage',
+    example: 4200,
+    description: 'Current amount available for this resource',
   })
-  criticalPercentage: number;
+  currentAmount: number;
 
   @ApiProperty({
-    example: 0.25,
-    description: 'Consumption rate per minute',
+    example: 5000,
+    description: 'Maximum storage capacity for this resource',
   })
-  consumptionRatePerMinute: number;
+  maxCapacity: number;
+
+  @ApiProperty({
+    example: 2.1,
+    description:
+      'Per-capita consumption per hour (same units as the resource, e.g. L/h/person)',
+  })
+  perCapitaConsumptionPerHour: number;
+
+  @ApiProperty({
+    example: 72,
+    required: false,
+    description: 'Safety window in hours the stock should cover',
+  })
+  safeWindowHours?: number;
 
   @ApiProperty({
     required: false,

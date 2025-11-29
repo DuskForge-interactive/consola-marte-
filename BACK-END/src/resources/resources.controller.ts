@@ -22,6 +22,8 @@ import { ResourceCardDto } from './dto/resource-card.dto';
 import { CreateResourceDto } from './dto/create-resource.dto';
 import { UpdateResourceDto } from './dto/update-resource.dto';
 import { ResourceHistoryPointDto } from './dto/resource-history-point.dto';
+import { UpdatePopulationDto } from './dto/update-population.dto';
+import { UpdatePopulationResponseDto } from './dto/update-population-response.dto';
 
 @ApiTags('resources')
 @Controller('resources')
@@ -122,5 +124,17 @@ export class ResourcesController {
       from ? new Date(from) : undefined,
       to ? new Date(to) : undefined,
     );
+  }
+
+  @Patch('population/update')
+  @ApiBody({ type: UpdatePopulationDto })
+  @ApiOkResponse({
+    type: UpdatePopulationResponseDto,
+    description: 'New population snapshot with recomputed resources',
+  })
+  async updatePopulation(
+    @Body() dto: UpdatePopulationDto,
+  ): Promise<UpdatePopulationResponseDto> {
+    return this.resourcesService.updatePopulation(dto.population);
   }
 }

@@ -69,10 +69,21 @@ const ResourcePage = () => {
       return;
     }
     requestResupply(resource.id);
+    const resupplyAmount = resource.safetyStockAmount;
+    const capacityLimit =
+      typeof resource.maxCapacity === 'number'
+        ? resource.maxCapacity
+        : Number.POSITIVE_INFINITY;
+    const projectedTotal = Math.min(
+      capacityLimit,
+      (resource.currentQuantity ?? 0) + resupplyAmount
+    );
+    const formatAmount = (value: number) =>
+      value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
     toast({
-      title: "📦 Solicitud Enviada",
-      description: `Resupply de ${resource.name} solicitado exitosamente.`
+      title: "📦 Reabastecimiento aplicado",
+      description: `+${formatAmount(resupplyAmount)} ${resource.unit}. Inventario proyectado: ${formatAmount(projectedTotal)} ${resource.unit}.`
     });
   };
 
@@ -93,6 +104,10 @@ const ResourcePage = () => {
   }
 
   const percentage = resource.currentPercentage;
+  const percentageColor = 'text-foreground';
+  const autonomyHours = resource.autonomyHours;
+  const autonomyDays =
+    autonomyHours === null ? null : Number((autonomyHours / 24).toFixed(1));
   const timeline = useMemo(
     () =>
       [...historyPoints].sort(
@@ -137,8 +152,29 @@ const ResourcePage = () => {
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-sm text-muted-foreground">Nivel actual:</p>
-                <p className="text-2xl font-bold">
+                <p className={`text-2xl font-bold ${percentageColor}`}>
                   {percentage.toFixed(2)}% restante
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {(resource.currentQuantity ?? 0).toLocaleString()} {resource.unit} disponibles
+                </p>
+                <p className="text-xs text-muted-foreground font-mono">
+                  Capacidad máxima:{' '}
+                  {resource.maxCapacity !== null
+                    ? resource.maxCapacity.toLocaleString()
+                    : 'N/D'} {resource.unit}
+                </p>
+                <p className="text-xs text-muted-foreground font-mono">
+                  Ventana segura ({resource.safeWindowHours}h):{' '}
+                  {resource.safetyStockAmount.toLocaleString()} {resource.unit}
+                </p>
+                <p className="text-xs text-muted-foreground font-mono">
+                  Autonomía:{' '}
+                  {autonomyHours === null
+                    ? 'Estable'
+                    : `${autonomyHours.toFixed(1)} h (${
+                        autonomyDays !== null ? `${autonomyDays} d` : '~'
+                      })`}
                 </p>
               </div>
 
@@ -155,6 +191,27 @@ const ResourcePage = () => {
               error={historyError}
               points={historyPoints}
             />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="glass p-3 rounded-lg">
+                <p className="text-xs text-muted-foreground">Consumo neto</p>
+                <p className="text-lg font-semibold">
+                  {resource.totalConsumptionPerHour.toFixed(2)} {resource.unit}/h
+                </p>
+              </div>
+              <div className="glass p-3 rounded-lg">
+                <p className="text-xs text-muted-foreground">Consumo por persona</p>
+                <p className="text-lg font-semibold">
+                  {resource.perCapitaConsumptionPerHour.toFixed(2)} {resource.unit}/h
+                </p>
+              </div>
+              <div className="glass p-3 rounded-lg">
+                <p className="text-xs text-muted-foreground">Población cubierta</p>
+                <p className="text-lg font-semibold">
+                  {resource.population.toLocaleString()} colonos
+                </p>
+              </div>
+            </div>
 
             {/* Botón de resupply */}
             <Button

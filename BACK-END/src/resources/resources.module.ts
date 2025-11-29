@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ResourceStatus } from './resource-status.entity';
 import { ResourceKind } from './resource-kind.entity';
 import { ResourceHistory } from './resource-history.entity';
+import { ColonyState } from './colony-state.entity';
 import { ResourcesService } from './resources.service';
 import { ResourcesController } from './resources.controller';
 import { ResourcesGateway } from './resources.gateway';
@@ -11,7 +12,12 @@ import { ResourcesDecayService } from './resources-decay.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ResourceStatus, ResourceKind, ResourceHistory]),
+    TypeOrmModule.forFeature([
+      ResourceStatus,
+      ResourceKind,
+      ResourceHistory,
+      ColonyState,
+    ]),
   ],
   providers: [
     ResourcesService,

@@ -23,34 +23,42 @@ import { useToast } from '@/hooks/use-toast';
 type CreateFormState = {
   code: string;
   displayName: string;
-  currentPercentage: string;
-  criticalPercentage: string;
-  consumptionRatePerMinute: string;
+  unit: string;
+  currentAmount: string;
+  maxCapacity: string;
+  perCapitaConsumptionPerHour: string;
+  safeWindowHours: string;
   isCritical: boolean;
 };
 
 type EditFormState = {
   displayName: string;
-  currentPercentage: string;
-  criticalPercentage: string;
-  consumptionRatePerMinute: string;
+  unit: string;
+  currentAmount: string;
+  maxCapacity: string;
+  perCapitaConsumptionPerHour: string;
+  safeWindowHours: string;
   isCritical: boolean;
 };
 
 const defaultCreateState: CreateFormState = {
   code: '',
   displayName: '',
-  currentPercentage: '',
-  criticalPercentage: '',
-  consumptionRatePerMinute: '',
+  unit: '',
+  currentAmount: '',
+  maxCapacity: '',
+  perCapitaConsumptionPerHour: '',
+  safeWindowHours: '',
   isCritical: false,
 };
 
 const defaultEditState: EditFormState = {
   displayName: '',
-  currentPercentage: '',
-  criticalPercentage: '',
-  consumptionRatePerMinute: '',
+  unit: '',
+  currentAmount: '',
+  maxCapacity: '',
+  perCapitaConsumptionPerHour: '',
+  safeWindowHours: '',
   isCritical: false,
 };
 
@@ -97,10 +105,12 @@ export const ResourceManager = () => {
 
     setEditForm({
       displayName: selectedResource.name,
-      currentPercentage: selectedResource.currentPercentage.toString(),
-      criticalPercentage: selectedResource.criticalPercentage.toString(),
-      consumptionRatePerMinute:
-        selectedResource.consumptionRatePerMinute.toString(),
+      unit: selectedResource.unit,
+      currentAmount: (selectedResource.currentQuantity ?? 0).toString(),
+      maxCapacity: (selectedResource.maxCapacity ?? 0).toString(),
+      perCapitaConsumptionPerHour:
+        selectedResource.perCapitaConsumptionPerHour.toString(),
+      safeWindowHours: selectedResource.safeWindowHours.toString(),
       isCritical: selectedResource.isCritical,
     });
   }, [selectedResource]);
@@ -112,11 +122,15 @@ export const ResourceManager = () => {
       const payload = {
         code: createForm.code.trim().toUpperCase(),
         displayName: createForm.displayName.trim(),
-        currentPercentage: parseNumberInput(createForm.currentPercentage),
-        criticalPercentage: parseNumberInput(createForm.criticalPercentage),
-        consumptionRatePerMinute: parseNumberInput(
-          createForm.consumptionRatePerMinute,
+        unit: createForm.unit.trim() || 'unit',
+        currentAmount: parseNumberInput(createForm.currentAmount),
+        maxCapacity: parseNumberInput(createForm.maxCapacity),
+        perCapitaConsumptionPerHour: parseNumberInput(
+          createForm.perCapitaConsumptionPerHour,
         ),
+        safeWindowHours: createForm.safeWindowHours
+          ? parseNumberInput(createForm.safeWindowHours)
+          : undefined,
         isCritical: createForm.isCritical,
       };
 
@@ -155,11 +169,17 @@ export const ResourceManager = () => {
       setUpdating(true);
       const payload = {
         displayName: editForm.displayName.trim(),
-        currentPercentage: parseNumberInput(editForm.currentPercentage),
-        criticalPercentage: parseNumberInput(editForm.criticalPercentage),
-        consumptionRatePerMinute: parseNumberInput(
-          editForm.consumptionRatePerMinute,
-        ),
+        unit: editForm.unit.trim() || undefined,
+        currentAmount: parseNumberInput(editForm.currentAmount),
+        maxCapacity: editForm.maxCapacity
+          ? parseNumberInput(editForm.maxCapacity)
+          : undefined,
+        perCapitaConsumptionPerHour: editForm.perCapitaConsumptionPerHour
+          ? parseNumberInput(editForm.perCapitaConsumptionPerHour)
+          : undefined,
+        safeWindowHours: editForm.safeWindowHours
+          ? parseNumberInput(editForm.safeWindowHours)
+          : undefined,
         isCritical: editForm.isCritical,
       };
 
@@ -255,6 +275,38 @@ export const ResourceManager = () => {
                 required
               />
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="create-unit">Unidad</Label>
+                <Input
+                  id="create-unit"
+                  value={createForm.unit}
+                  placeholder="L, kg, kWh..."
+                  onChange={(event) =>
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      unit: event.target.value,
+                    }))
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-amount">Cantidad disponible</Label>
+                <Input
+                  id="create-amount"
+                  value={createForm.currentAmount}
+                  placeholder="Ej: 4200"
+                  onChange={(event) =>
+                    setCreateForm((prev) => ({
+                      ...prev,
+                      currentAmount: event.target.value,
+                    }))
+                  }
+                  required
+                />
+              </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="create-name">Nombre</Label>
               <Input
@@ -272,45 +324,51 @@ export const ResourceManager = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="create-current">% actual</Label>
+                <Label htmlFor="create-capacity">Capacidad máxima (unidad)</Label>
                 <Input
-                  id="create-current"
-                  value={createForm.currentPercentage}
+                  id="create-capacity"
+                  value={createForm.maxCapacity}
+                  placeholder="Ej: 60000"
                   onChange={(event) =>
                     setCreateForm((prev) => ({
                       ...prev,
-                      currentPercentage: event.target.value,
+                      maxCapacity: event.target.value,
                     }))
                   }
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="create-critical">% crítico</Label>
+                <Label htmlFor="create-per-hour">
+                  Consumo por persona (unidad/h)
+                </Label>
                 <Input
-                  id="create-critical"
-                  value={createForm.criticalPercentage}
+                  id="create-per-hour"
+                  value={createForm.perCapitaConsumptionPerHour}
+                  placeholder="Ej: 2.1"
                   onChange={(event) =>
                     setCreateForm((prev) => ({
                       ...prev,
-                      criticalPercentage: event.target.value,
+                      perCapitaConsumptionPerHour: event.target.value,
                     }))
                   }
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="create-consumption">Consumo %/min</Label>
+                <Label htmlFor="create-safe-window">
+                  Ventana segura (horas)
+                </Label>
                 <Input
-                  id="create-consumption"
-                  value={createForm.consumptionRatePerMinute}
+                  id="create-safe-window"
+                  value={createForm.safeWindowHours}
+                  placeholder="Ej: 72"
                   onChange={(event) =>
                     setCreateForm((prev) => ({
                       ...prev,
-                      consumptionRatePerMinute: event.target.value,
+                      safeWindowHours: event.target.value,
                     }))
                   }
-                  required
                 />
               </div>
               <div className="space-y-2">
@@ -380,14 +438,14 @@ export const ResourceManager = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-current">% actual</Label>
+                <Label htmlFor="edit-unit">Unidad</Label>
                 <Input
-                  id="edit-current"
-                  value={editForm.currentPercentage}
+                  id="edit-unit"
+                  value={editForm.unit}
                   onChange={(event) =>
                     setEditForm((prev) => ({
                       ...prev,
-                      currentPercentage: event.target.value,
+                      unit: event.target.value,
                     }))
                   }
                   disabled={!selectedResource}
@@ -395,14 +453,31 @@ export const ResourceManager = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-critical">% crítico</Label>
+                <Label htmlFor="edit-amount">Cantidad disponible</Label>
                 <Input
-                  id="edit-critical"
-                  value={editForm.criticalPercentage}
+                  id="edit-amount"
+                  value={editForm.currentAmount}
                   onChange={(event) =>
                     setEditForm((prev) => ({
                       ...prev,
-                      criticalPercentage: event.target.value,
+                      currentAmount: event.target.value,
+                    }))
+                  }
+                  disabled={!selectedResource}
+                  required
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-capacity">Capacidad máxima (unidad)</Label>
+                <Input
+                  id="edit-capacity"
+                  value={editForm.maxCapacity}
+                  onChange={(event) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      maxCapacity: event.target.value,
                     }))
                   }
                   disabled={!selectedResource}
@@ -410,18 +485,34 @@ export const ResourceManager = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-consumption">Consumo %/min</Label>
+                <Label htmlFor="edit-per-hour">
+                  Consumo por persona (unidad/h)
+                </Label>
                 <Input
-                  id="edit-consumption"
-                  value={editForm.consumptionRatePerMinute}
+                  id="edit-per-hour"
+                  value={editForm.perCapitaConsumptionPerHour}
                   onChange={(event) =>
                     setEditForm((prev) => ({
                       ...prev,
-                      consumptionRatePerMinute: event.target.value,
+                      perCapitaConsumptionPerHour: event.target.value,
                     }))
                   }
                   disabled={!selectedResource}
                   required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-safe-window">Ventana segura (horas)</Label>
+                <Input
+                  id="edit-safe-window"
+                  value={editForm.safeWindowHours}
+                  onChange={(event) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      safeWindowHours: event.target.value,
+                    }))
+                  }
+                  disabled={!selectedResource}
                 />
               </div>
               <div className="space-y-2 flex items-center justify-between">

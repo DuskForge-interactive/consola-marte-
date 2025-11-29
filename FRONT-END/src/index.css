@@ -8,69 +8,66 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Mars Mission Control - Dark Space Theme */
-    --background: 220 25% 8%;
-    --foreground: 210 40% 98%;
+    /* Mars Habitat palette */
+    --background: 229 26% 7%;
+    --foreground: 210 40% 96%;
 
-    --card: 220 20% 12%;
-    --card-foreground: 210 40% 98%;
+    --card: 230 21% 11%;
+    --card-foreground: 210 34% 96%;
 
-    --popover: 220 20% 10%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 229 23% 9%;
+    --popover-foreground: 210 40% 96%;
 
-    /* Primary: Mars Orange */
-    --primary: 15 85% 55%;
+    --primary: 16 90% 58%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Deep Space Blue */
-    --secondary: 220 25% 18%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 215 28% 18%;
+    --secondary-foreground: 210 40% 96%;
 
-    /* Muted: Subtle gray for backgrounds */
-    --muted: 220 20% 15%;
-    --muted-foreground: 215 15% 60%;
+    --muted: 224 22% 15%;
+    --muted-foreground: 215 17% 70%;
 
-    /* Accent: Bright Cyan for highlights */
-    --accent: 190 80% 50%;
-    --accent-foreground: 220 25% 8%;
+    --accent: 189 79% 52%;
+    --accent-foreground: 229 26% 7%;
 
-    /* Critical Alert: Red */
-    --critical: 0 85% 60%;
+    --critical: 0 78% 61%;
     --critical-foreground: 0 0% 100%;
 
-    /* Warning: Amber */
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 0%;
+    --warning: 36 92% 55%;
+    --warning-foreground: 229 26% 7%;
 
-    /* Success: Green */
-    --success: 142 76% 45%;
-    --success-foreground: 0 0% 100%;
+    --success: 150 54% 45%;
+    --success-foreground: 140 13% 12%;
 
-    --destructive: 0 85% 60%;
+    --destructive: 0 78% 61%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 22%;
-    --input: 220 20% 18%;
-    --ring: 190 80% 50%;
+    --border: 225 20% 25%;
+    --input: 225 20% 17%;
+    --ring: 16 90% 58%;
 
-    --radius: 0.75rem;
+    --radius: 0.8rem;
 
-    /* Glassmorphism effects */
-    --glass-bg: 220 20% 12% / 0.6;
-    --glass-border: 220 20% 30% / 0.3;
-    
+    /* Glassmorphism */
+    --glass-bg: 227 26% 12% / 0.65;
+    --glass-border: 225 30% 45% / 0.25;
+
     /* Gradients */
-    --gradient-space: linear-gradient(135deg, hsl(220 25% 8%), hsl(230 30% 12%));
-    --gradient-mars: linear-gradient(135deg, hsl(15 85% 55%), hsl(25 90% 45%));
-    --gradient-glow: radial-gradient(circle at center, hsl(190 80% 50% / 0.2), transparent);
+    --gradient-space: linear-gradient(135deg, hsl(232 32% 11%), hsl(223 27% 8%));
+    --gradient-mars: linear-gradient(135deg, hsl(16 90% 58%), hsl(28 87% 52%));
+    --gradient-glow: radial-gradient(circle at 20% 20%, hsl(190 80% 50% / 0.25), transparent 50%);
 
-    /* Shadows */
-    --shadow-glow: 0 0 40px hsl(190 80% 50% / 0.3);
-    --shadow-critical: 0 0 30px hsl(0 85% 60% / 0.4);
-    --shadow-card: 0 8px 32px hsl(220 25% 5% / 0.5);
+    /* Chart palette */
+    --chart-line: 16 90% 62%;
+    --chart-fill: 16 90% 62%;
+    --chart-grid: 225 20% 30%;
+    --chart-axis: 214 20% 75%;
 
-    /* Animations */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --shadow-glow: 0 0 40px hsl(189 79% 52% / 0.25);
+    --shadow-critical: 0 0 32px hsl(0 78% 61% / 0.35);
+    --shadow-card: 0 14px 45px hsl(230 32% 6% / 0.65);
+
+    --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
@@ -80,38 +77,41 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground font-mono;
-    background: linear-gradient(135deg, hsl(220 25% 8%), hsl(230 30% 12%));
+    @apply bg-background text-foreground font-sans antialiased;
+    background: var(--gradient-space);
     background-attachment: fixed;
+    color-scheme: dark;
   }
 }
 
 /* Glassmorphism utility classes */
 @layer utilities {
   .glass {
-    background: rgba(255, 255, 255, 0.05);
+    background: hsla(var(--card) / 0.55);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid hsla(var(--glass-border));
+    box-shadow: var(--shadow-card);
   }
 
   .glass-strong {
-    background: rgba(255, 255, 255, 0.08);
+    background: hsla(var(--card) / 0.75);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid hsla(var(--glass-border));
+    box-shadow: 0 0 30px hsla(var(--accent) / 0.15);
   }
 
   .glow-accent {
-    box-shadow: 0 0 20px hsl(190 80% 50% / 0.3);
+    box-shadow: 0 0 24px hsl(var(--accent) / 0.45);
   }
 
   .glow-critical {
-    box-shadow: 0 0 20px hsl(0 85% 60% / 0.4);
+    box-shadow: 0 0 26px hsl(var(--critical) / 0.5);
   }
 
   .text-gradient-mars {
-    background: linear-gradient(135deg, hsl(15 85% 55%), hsl(25 90% 45%));
+    background: linear-gradient(135deg, hsl(16 90% 58%), hsl(32 85% 55%));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;

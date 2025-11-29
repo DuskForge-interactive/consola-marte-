@@ -27,8 +27,20 @@ export class ResourceStatus {
   @Column({ type: 'numeric', precision: 5, scale: 2 })
   critical_percentage: string;
 
-  @Column({ type: 'numeric', precision: 6, scale: 3 })
-  consumption_rate_per_minute: string;
+  @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
+  current_quantity: string | null;
+
+  @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
+  max_capacity: string | null;
+
+  @Column({ type: 'int', nullable: true })
+  population: number | null;
+
+  @Column({ type: 'numeric', precision: 10, scale: 3, nullable: true })
+  per_capita_consumption_per_hour: string | null;
+
+  @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true })
+  safe_window_hours: string | null;
 
   @Column({ type: 'timestamptz' })
   last_updated: Date;

@@ -18,6 +18,12 @@ export class ResourceKind {
   @Column({ type: 'numeric', precision: 6, scale: 3 })
   default_consumption_rate_per_minute: string;
 
+  @Column({ default: 'unit' })
+  unit: string;
+
+  @Column({ type: 'numeric', precision: 10, scale: 4, default: 0 })
+  per_person_rate_per_minute: string;
+
   @OneToMany(() => ResourceStatus, (status) => status.kind)
   statuses: ResourceStatus[];
 }

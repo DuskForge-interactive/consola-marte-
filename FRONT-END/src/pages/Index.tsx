@@ -7,6 +7,7 @@ import { StatsOverview } from '@/components/StatsOverview';
 import { useToast } from '@/hooks/use-toast';
 import { ResourceManager } from '@/components/ResourceManager';
 import type { ActivityEntry } from '@/store/useResourceStore';
+import type { ResourceCard as ResourceCardDto } from '@/lib/api';
 
 type AlertEntry = {
   id: string;
@@ -22,7 +23,9 @@ const InventoryLogItem = ({ entry }: { entry: ActivityEntry }) => {
   });
   const change =
     typeof entry.change === 'number' && entry.change !== 0
-      ? `${entry.change > 0 ? '+' : ''}${entry.change.toFixed(2)}%`
+      ? `${entry.change > 0 ? '+' : ''}${entry.change.toFixed(2)} ${
+          entry.unit
+        }`
       : `${entry.percentage.toFixed(2)}%`;
   const changeClass =
     typeof entry.change === 'number' && entry.change !== 0
@@ -55,6 +58,7 @@ const Index = () => {
   const clearCriticalAlerts = useResourceStore(
     (state) => state.clearCriticalAlerts,
   );
+  const population = useResourceStore((state) => state.population);
   const activityLog = useResourceStore((state) => state.activityLog);
   const { toast } = useToast();
   const [alerts, setAlerts] = useState<AlertEntry[]>([]);
@@ -62,6 +66,17 @@ const Index = () => {
   const resourceList = useMemo(
     () => Object.values(resourcesRecord),
     [resourcesRecord],
+  );
+  const minimumSummary = useMemo(
+    () =>
+      resourceList.map((resource) => {
+        const capText =
+          resource.maxCapacity !== null
+            ? resource.maxCapacity.toLocaleString()
+            : 'N/D';
+        return `${resource.name}: cap. máx ${capText} ${resource.unit} • buffer ${resource.safeWindowHours}h`;
+      }),
+    [resourceList],
   );
 
 
@@ -95,11 +110,23 @@ const Index = () => {
     clearCriticalAlerts();
   }, [criticalQueue, toast, clearCriticalAlerts]);
 
-  const handleResupply = (resourceId: string, resourceName: string) => {
-    requestResupply(resourceId);
+  const handleResupply = (resource: ResourceCardDto) => {
+    requestResupply(resource.id);
+    const resupplyAmount = resource.safetyStockAmount;
+    const maxCapacity =
+      typeof resource.maxCapacity === 'number'
+        ? resource.maxCapacity
+        : Number.POSITIVE_INFINITY;
+    const target = Math.min(
+      maxCapacity,
+      (resource.currentQuantity ?? 0) + resupplyAmount,
+    );
+    const formatAmount = (value: number) =>
+      value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
     toast({
-      title: '📦 Solicitud enviada',
-      description: `Resupply de ${resourceName} solicitado exitosamente`,
+      title: '📦 Reabastecimiento aplicado',
+      description: `+${formatAmount(resupplyAmount)} ${resource.unit} solicitados • inventario proyectado: ${formatAmount(target)} ${resource.unit}.`,
     });
   };
 
@@ -130,9 +157,7 @@ const Index = () => {
             <ResourceCard
               key={resource.id}
               resource={resource}
-              onRequestResupply={() =>
-                handleResupply(resource.id, resource.name)
-              }
+              onRequestResupply={handleResupply}
             />
           ))}
         </div>
@@ -183,7 +208,16 @@ const Index = () => {
 
 
         {/* Footer Info */}
-        <div className="glass p-4 rounded-lg text-center text-sm text-muted-foreground">
+        <div className="glass p-4 rounded-lg text-center text-sm text-muted-foreground space-y-2">
+          <p className="font-mono">
+            👥 Población activa: {population} colonos
+          </p>
+          <p className="font-mono">
+            ⚖️ Masa mínima vital:{' '}
+            {minimumSummary.length > 0
+              ? minimumSummary.join(' • ')
+              : 'Sin recursos registrados'}
+          </p>
           <p className="font-mono">
             🛰️ Sistema sincronizado con Tierra • Latencia: ~3-22 min • Próxima ventana de comunicación: 04:23 UTC
           </p>
