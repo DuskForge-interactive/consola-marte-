@@ -22,3 +22,8 @@ export async function fetchResources(): Promise<ResourceCard[]> {
   const res = await api.get<ResourceCard[]>('/resources');
   return res.data;
 }
+
+export async function fetchResourceByCode(code: string): Promise<ResourceCard> {
+  const res = await api.get<ResourceCard>(`/resources/${code}`);
+  return res.data;
+}

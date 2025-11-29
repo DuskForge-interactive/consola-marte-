@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useResourceStore } from '@/store/useResourceStore';
 import { ResourceCard } from '@/components/ResourceCard';
 import { AlertBanner } from '@/components/AlertBanner';
@@ -12,91 +12,92 @@ type LogEntry = {
   message: string;
 };
 
+type AlertEntry = {
+  id: string;
+  message: string;
+  resourceName: string;
+};
+
 const Index = () => {
-  const { resources, requestResupply, consumeResource } = useResourceStore();
+  const resourcesRecord = useResourceStore((state) => state.resources);
+  const requestResupply = useResourceStore((state) => state.requestResupply);
+  const criticalQueue = useResourceStore((state) => state.criticalQueue);
+  const clearCriticalAlerts = useResourceStore(
+    (state) => state.clearCriticalAlerts,
+  );
   const { toast } = useToast();
-  const [alerts, setAlerts] = useState<string[]>([]);
+  const [alerts, setAlerts] = useState<AlertEntry[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
+  const resourceList = useMemo(
+    () => Object.values(resourcesRecord),
+    [resourcesRecord],
+  );
 
-  // Simulate resource consumption
+  const generarMensajeDummy = () => {
+    const mensajes = [
+      'Oxígeno ajustado debido a variación de consumo.',
+      'Reserva de agua actualizada tras ciclo de purificación.',
+      'Revisión automática de filtros completada.',
+      'Módulo de energía registró un ligero descenso.',
+      'Nuevo paquete enviado desde plataforma orbital.',
+      'Sincronizando datos del inventario con estación base.',
+      'Análisis de nutrientes recalculado.',
+      'Movimiento detectado en el almacén 3.',
+    ];
+
+    return mensajes[Math.floor(Math.random() * mensajes.length)];
+  };
+
   useEffect(() => {
     const interval = setInterval(() => {
-      const resourceIds = Object.keys(resources) as Array<keyof typeof resources>;
-      const randomResource = resourceIds[Math.floor(Math.random() * resourceIds.length)];
-      const consumptionAmount = Math.floor(Math.random() * 10) + 5;
-      consumeResource(randomResource, consumptionAmount);
-    }, 10000);
+      const fakeLog: LogEntry = {
+        id: crypto.randomUUID(),
+        timestamp: new Date().toLocaleTimeString(),
+        message: generarMensajeDummy(),
+      };
 
-    
+      setLogs((prev) => [fakeLog, ...prev]);
+    }, Math.random() * 2000 + 2000);
 
     return () => clearInterval(interval);
-  }, [resources, consumeResource]);
+  }, []);
 
-
-      const generarMensajeDummy = () => {
-  const mensajes = [
-    "Oxígeno ajustado debido a variación de consumo.",
-    "Reserva de agua actualizada tras ciclo de purificación.",
-    "Revisión automática de filtros completada.",
-    "Módulo de energía registró un ligero descenso.",
-    "Nuevo paquete enviado desde plataforma orbital.",
-    "Sincronizando datos del inventario con estación base.",
-    "Análisis de nutrientes recalculado.",
-    "Movimiento detectado en el almacén 3."
-  ];
-  
-  return mensajes[Math.floor(Math.random() * mensajes.length)];
-};
-    //simulate historial logs
-    useEffect(() => {
-  // Simulación de WebSocket dummy
-      const interval = setInterval(() => {
-        const fakeLog: LogEntry = {
-          id: crypto.randomUUID(),
-          timestamp: new Date().toLocaleTimeString(),
-          message: generarMensajeDummy()
-        };
-
-        setLogs(prev => [fakeLog, ...prev]); // se agrega arriba igual que un WS real
-      }, Math.random() * 2000 + 2000); // cada 2–4 sec
-
-      return () => clearInterval(interval);
-    }, []);
-
-
-
-
-
-  // Check for critical resources
   useEffect(() => {
-    const criticalResources = Object.values(resources).filter(
-      (r) => r.current <= r.criticalLevel
-    );
-
-    const newAlerts = criticalResources.map(
-      (r) => `${r.name} ha caído a ${r.current} ${r.unit} - Nivel peligroso detectado`
-    );
+    const newAlerts = resourceList
+      .filter((resource) => resource.isCritical)
+      .map<AlertEntry>((resource) => ({
+        id: resource.id,
+        resourceName: resource.name,
+        message: `${resource.name} está en ${resource.currentPercentage.toFixed(
+          2,
+        )}% (umbral ${resource.criticalPercentage}%).`,
+      }));
 
     setAlerts(newAlerts);
+  }, [resourceList]);
 
-    // Show toast for new critical alerts
-    criticalResources.forEach((r) => {
-      if (r.current <= r.criticalLevel && r.current > r.criticalLevel - 50) {
-        toast({
-          variant: 'destructive',
-          title: '🚨 Alerta Crítica',
-          description: `${r.name} está en nivel peligroso: ${r.current} ${r.unit}`,
-        });
-      }
+  useEffect(() => {
+    if (criticalQueue.length === 0) return;
+
+    criticalQueue.forEach((resource) => {
+      toast({
+        variant: 'destructive',
+        title: '🚨 Alerta crítica',
+        description: `${resource.name} cayó a ${resource.currentPercentage.toFixed(
+          1,
+        )}%`,
+      });
     });
-  }, [resources, toast]);
 
-  const handleResupply = (resourceId: keyof typeof resources) => {
+    clearCriticalAlerts();
+  }, [criticalQueue, toast, clearCriticalAlerts]);
+
+  const handleResupply = (resourceId: string, resourceName: string) => {
     requestResupply(resourceId);
     toast({
-      title: '📦 Solicitud Enviada',
-      description: `Resupply de ${resources[resourceId].name} solicitado exitosamente`,
+      title: '📦 Solicitud enviada',
+      description: `Resupply de ${resourceName} solicitado exitosamente`,
     });
   };
 
@@ -108,11 +109,11 @@ const Index = () => {
         {/* Alerts */}
         {alerts.length > 0 && (
           <div className="space-y-3">
-            {alerts.map((alert, index) => (
+            {alerts.map((alert) => (
               <AlertBanner
-                key={index}
-                message={alert}
-                resourceName={Object.values(resources)[index]?.name || ''}
+                key={alert.id}
+                message={alert.message}
+                resourceName={alert.resourceName}
               />
             ))}
           </div>
@@ -123,11 +124,13 @@ const Index = () => {
 
         {/* Resource Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {Object.values(resources).map((resource) => (
+          {resourceList.map((resource) => (
             <ResourceCard
               key={resource.id}
               resource={resource}
-              onRequestResupply={() => handleResupply(resource.id)}
+              onRequestResupply={() =>
+                handleResupply(resource.id, resource.name)
+              }
             />
           ))}
         </div>
@@ -165,11 +168,11 @@ const Index = () => {
           <p className="text-sm text-muted-foreground">No hay alertas críticas.</p>
         ) : (
           <div className="space-y-3">
-            {alerts.map((alert, index) => (
+            {alerts.map((alert) => (
               <AlertBanner
-                key={index}
-                message={alert}
-                resourceName={Object.values(resources)[index]?.name || ''}
+                key={alert.id}
+                message={alert.message}
+                resourceName={alert.resourceName}
               />
             ))}
           </div>

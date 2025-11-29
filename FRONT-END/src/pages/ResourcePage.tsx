@@ -1,26 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useResourceStore } from "@/store/useResourceStore";
 import { Header } from "@/components/Header";
 import { AlertBanner } from "@/components/AlertBanner";
 import { Button } from "@/components/ui/button";
-import { LineChart, Line, ResponsiveContainer } from "recharts";
+import { LineChart, Line, ResponsiveContainer, XAxis } from "recharts";
 import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { fetchResourceByCode, type ResourceCard } from "@/lib/api";
 
 type LogEntry = {
   id: string;
   timestamp: string;
   message: string;
 };
-
-const dummyHistory = [
-  { day: "Mon", value: 80 },
-  { day: "Tue", value: 75 },
-  { day: "Wed", value: 60 },
-  { day: "Thu", value: 55 },
-  { day: "Fri", value: 50 }
-];
 
 const generarMensajeDummy = () => {
   const mensajes = [
@@ -41,9 +34,13 @@ const ResourcePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { resources, requestResupply } = useResourceStore();
-
-  const resource = resources[id as keyof typeof resources];
+  const resourcesRecord = useResourceStore((state) => state.resources);
+  const requestResupply = useResourceStore((state) => state.requestResupply);
+  const code = (id || "").toUpperCase();
+  const resourceFromStore = resourcesRecord[code];
+  const [fetchedResource, setFetchedResource] = useState<ResourceCard | null>(null);
+  const [loading, setLoading] = useState(!resourceFromStore);
+  const resource = resourceFromStore ?? fetchedResource;
 
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [alerts, setAlerts] = useState<string[]>([]);
@@ -62,13 +59,35 @@ const ResourcePage = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Compute alerts
   useEffect(() => {
-    if (!resource) return;
+    if (resourceFromStore || !code) return;
 
-    if (resource.current <= resource.criticalLevel) {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchResourceByCode(code);
+        setFetchedResource(data);
+      } catch (error) {
+        console.error("Failed to load resource", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [code, resourceFromStore]);
+
+  useEffect(() => {
+    if (!resource) {
+      setAlerts([]);
+      return;
+    }
+
+    if (resource.isCritical) {
       setAlerts([
-        `${resource.name} ha caído a ${resource.current} ${resource.unit}. Nivel crítico alcanzado.`
+        `${resource.name} ha caído a ${resource.currentPercentage.toFixed(
+          2
+        )}% (umbral ${resource.criticalPercentage}%).`,
       ]);
     } else {
       setAlerts([]);
@@ -76,6 +95,9 @@ const ResourcePage = () => {
   }, [resource]);
 
   const handleRequestResupply = () => {
+    if (!resource) {
+      return;
+    }
     requestResupply(resource.id);
 
     toast({
@@ -83,6 +105,14 @@ const ResourcePage = () => {
       description: `Resupply de ${resource.name} solicitado exitosamente.`
     });
   };
+
+  if (loading) {
+    return (
+      <div className="p-10 text-center">
+        <h2 className="text-2xl font-bold">Cargando recurso...</h2>
+      </div>
+    );
+  }
 
   if (!resource) {
     return (
@@ -92,7 +122,21 @@ const ResourcePage = () => {
     );
   }
 
-  const percentage = Math.round((resource.current / resource.max) * 100);
+  const percentage = resource.currentPercentage;
+  const chartData = useMemo(() => {
+    const values: number[] = [];
+    for (let i = 5; i >= 0; i -= 1) {
+      const nextValue = Math.max(
+        0,
+        resource.currentPercentage - i * resource.consumptionRatePerMinute
+      );
+      values.push(Number(nextValue.toFixed(2)));
+    }
+    return values.map((value, index) => ({
+      label: `T-${values.length - index}`,
+      value,
+    }));
+  }, [resource]);
 
   return (
     <div className="min-h-screen">
@@ -130,11 +174,11 @@ const ResourcePage = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Nivel actual:</p>
                 <p className="text-2xl font-bold">
-                  {resource.current} {resource.unit} ({percentage}%)
+                  {percentage.toFixed(2)}% restante
                 </p>
               </div>
 
-              {resource.current <= resource.criticalLevel && (
+              {resource.isCritical && (
                 <div className="text-red-500 font-semibold">
                   🚨 Nivel crítico
                 </div>
@@ -144,7 +188,11 @@ const ResourcePage = () => {
             {/* Gráfica */}
             <div className="h-56 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={dummyHistory}>
+                <LineChart data={chartData}>
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 12, fill: 'currentColor' }}
+                  />
                   <Line
                     type="monotone"
                     dataKey="value"
