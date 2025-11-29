@@ -1,44 +1,73 @@
-# Consola Marte – Frontend
+# React + TypeScript + Vite
 
-Interfaz en React + Tailwind que consume la API de recursos marcianos y presenta una consola en tiempo real con barras de capacidad, alertas y bitácora de eventos para el equipo de operaciones.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Stack
-- React 18 creado con Vite.
-- Tailwind CSS + Headless UI para componentes accesibles.
-- Zustand (o Redux Toolkit) para manejar el estado global de recursos.
-- Axios/SWR para llamadas a la API del backend Nest.
+Currently, two official plugins are available:
 
-## UX imaginada
-1. **Panel principal** muestra tarjetas de `Agua`, `Oxígeno`, `Energía`, `Alimentos` con barras llenado según `%`.
-2. **Vista consola** lista eventos entrantes (`station-03 envió alerta de oxígeno`).
-3. **Modo oscuro permanente** pensado para operar dentro de cúpulas y evitar reflejos.
-4. **Alert Drawer** se abre automáticamente cuando Supabase emite un evento `alert`.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## Configuración
-1. `npm install`
-2. Crea `.env` con la URL del backend:
-   ```bash
-   VITE_API_URL=https://api.consola-marte.local
-   VITE_WS_URL=wss://api.consola-marte.local/alerts
-   ```
-3. Ejecuta `npm run dev` para modo desarrollo o `npm run build` + `npm run preview` para revisar el build.
+## React Compiler
 
-## Estructura sugerida
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
-src/
- ├─ components/ResourceGauge.tsx
- ├─ modules/resources/api.ts
- ├─ modules/resources/store.ts
- ├─ pages/Dashboard.tsx
- └─ styles/tailwind.css
+
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
-
-## Buenas prácticas
-- Centraliza colores y gradientes de Tailwind en `tailwind.config.js` para mantener la estética “habitat marciano”.
-- Usa `aria-live="polite"` en los contenedores de alertas para operadores con lectores de pantalla.
-- Mockea la API con `msw` cuando no tengas el backend disponible.
-
-## Próximos pasos
-- Añadir modo kiosko para pantallas grandes en el centro de mando.
-- Integrar gráficos históricos con Recharts.
-- Automatizar despliegue en Vercel apuntando al backend Nest en Render/Fly.
