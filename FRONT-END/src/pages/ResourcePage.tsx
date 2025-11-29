@@ -2,10 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useResourceStore } from "@/store/useResourceStore";
 import { Header } from "@/components/Header";
-import { AlertBanner } from "@/components/AlertBanner";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { fetchResourceByCode, type ResourceCard } from "@/lib/api";
 import { ResourceHistoryChart } from "@/components/ResourceHistoryChart";
 import { useResourceHistory } from "@/hooks/use-resource-history";
@@ -13,9 +11,7 @@ import { useResourceHistory } from "@/hooks/use-resource-history";
 const ResourcePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const resourcesRecord = useResourceStore((state) => state.resources);
-  const requestResupply = useResourceStore((state) => state.requestResupply);
   const upsertResource = useResourceStore((state) => state.upsertResource);
   const code = (id || "").toUpperCase();
   const resourceFromStore = resourcesRecord[code];
@@ -29,6 +25,16 @@ const ResourcePage = () => {
     loading: historyLoading,
     error: historyError,
   } = useResourceHistory(code);
+  const timeline = useMemo(
+    () =>
+      historyPoints
+        .slice()
+        .sort(
+          (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        ),
+    [historyPoints],
+  );
 
   useEffect(() => {
     if (resourceFromStore || !code) return;
@@ -66,18 +72,6 @@ const ResourcePage = () => {
     }
   }, [resource]);
 
-  const handleRequestResupply = () => {
-    if (!resource) {
-      return;
-    }
-    requestResupply(resource.id);
-
-    toast({
-      title: "📦 Solicitud Enviada",
-      description: `Resupply de ${resource.name} solicitado exitosamente.`
-    });
-  };
-
   if (loading) {
     return (
       <div className="p-10 text-center">
@@ -95,15 +89,6 @@ const ResourcePage = () => {
   }
 
   const percentage = resource.currentPercentage;
-  const timeline = useMemo(
-    () =>
-      [...historyPoints].sort(
-        (a, b) =>
-          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      ),
-    [historyPoints]
-  );
-
   return (
     <div className="min-h-screen">
       <Header />
@@ -157,14 +142,6 @@ const ResourcePage = () => {
               error={historyError}
               points={historyPoints}
             />
-
-            {/* Botón de resupply */}
-            <Button
-              className="w-full"
-              onClick={handleRequestResupply}
-            >
-              Solicitar reabastecimiento
-            </Button>
 
             {/* Historial específico */}
             <div className="mt-6">

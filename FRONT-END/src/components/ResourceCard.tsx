@@ -1,5 +1,4 @@
 import type { ResourceCard as ResourceCardDto } from '@/lib/api';
-import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { AlertTriangle, TrendingDown } from 'lucide-react';
@@ -7,52 +6,56 @@ import { useNavigate } from 'react-router-dom';
 
 const RESOURCE_METADATA: Record<
   string,
-  { icon: string; unit: string; description: string }
+  { icon: string; description: string }
 > = {
   OXYGEN: {
     icon: '🌬️',
-    unit: '%',
     description: 'Oxígeno disponible en hábitat',
   },
-  WATER: { icon: '💧', unit: '%', description: 'Reservas de agua tratada' },
-  FOOD: { icon: '🍎', unit: '%', description: 'Comida lista para consumo' },
-  ENERGY: { icon: '⚡', unit: '%', description: 'Capacidad de energía' },
+  WATER: { icon: '💧', description: 'Reservas de agua tratada' },
+  FOOD: { icon: '🍎', description: 'Comida lista para consumo' },
+  ENERGY: { icon: '⚡', description: 'Capacidad de energía' },
 };
 
 interface ResourceCardProps {
   resource: ResourceCardDto;
-  onRequestResupply: () => void;
 }
 
-export const ResourceCard = ({
-  resource,
-  onRequestResupply,
-}: ResourceCardProps) => {
+export const ResourceCard = ({ resource }: ResourceCardProps) => {
   const navigate = useNavigate();
   const metadata =
     RESOURCE_METADATA[resource.id] ?? ({
       icon: '🛰️',
-      unit: '%',
       description: 'Recurso monitoreado',
     } as const);
 
   const percentage = Math.min(resource.currentPercentage, 100);
   const isCritical = resource.isCritical;
   const warningThreshold = resource.criticalPercentage + 10;
+  const optimalThreshold = 95;
   const isWarning = !isCritical && percentage <= warningThreshold;
-  const trend = resource.consumptionRatePerMinute;
+  const isOptimal = !isCritical && !isWarning && percentage >= optimalThreshold;
   const lastUpdated = new Date(resource.lastUpdated).toLocaleTimeString();
+  const consumptionPerHour = resource.consumptionRatePerMinute * 60;
+  const minutesToCritical =
+    resource.consumptionRatePerMinute > 0
+      ? (resource.currentPercentage - resource.criticalPercentage) /
+        resource.consumptionRatePerMinute
+      : null;
+  const autonomyLabel =
+    minutesToCritical === null
+      ? 'Consumo estable'
+      : minutesToCritical <= 0
+        ? 'Umbral alcanzado'
+        : `${(minutesToCritical / 60).toFixed(1)} h restantes`;
 
-  const getStatusColor = () => {
-    if (isCritical) return 'text-critical';
-    if (isWarning) return 'text-warning';
-    return 'text-success';
-  };
+  const getStatusColor = () => 'text-foreground';
 
   const getProgressColor = () => {
     if (isCritical) return 'bg-critical';
     if (isWarning) return 'bg-warning';
-    return 'bg-success';
+    if (isOptimal) return 'bg-success';
+    return 'bg-muted-foreground';
   };
 
   return (
@@ -95,7 +98,7 @@ export const ResourceCard = ({
               {percentage.toFixed(2)}%
             </span>
             <span className="text-sm text-muted-foreground">
-              Umbral crítico: {resource.criticalPercentage}%
+              {autonomyLabel}
             </span>
           </div>
 
@@ -107,27 +110,21 @@ export const ResourceCard = ({
             />
           </div>
 
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">
-              Consumo: -{Math.abs(trend).toFixed(2)}%/min
-            </span>
+          <div className="flex flex-col gap-1 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">
+                Consumo: {consumptionPerHour.toFixed(2)} pts/h
+              </span>
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <TrendingDown className="h-3 w-3" />
+                Actualizado: {lastUpdated}
+              </div>
+            </div>
             <div className="flex items-center gap-1 text-muted-foreground">
-              <TrendingDown className="h-3 w-3" />
-              Actualizado: {lastUpdated}
+              Umbral crítico: {resource.criticalPercentage.toFixed(1)}%
             </div>
           </div>
         </div>
-
-        <Button
-          onClick={(event) => {
-            event.stopPropagation();
-            onRequestResupply();
-          }}
-          variant={isCritical ? 'destructive' : 'secondary'}
-          className={`w-full font-semibold ${isCritical ? 'glow-critical' : ''}`}
-        >
-          {isCritical ? '🚨 RESUPPLY URGENTE' : '📦 Solicitar Resupply'}
-        </Button>
       </Card>
     </div>
   );

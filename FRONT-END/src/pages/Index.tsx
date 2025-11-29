@@ -22,7 +22,7 @@ const InventoryLogItem = ({ entry }: { entry: ActivityEntry }) => {
   });
   const change =
     typeof entry.change === 'number' && entry.change !== 0
-      ? `${entry.change > 0 ? '+' : ''}${entry.change.toFixed(2)}%`
+      ? `${entry.change > 0 ? '+' : ''}${entry.change.toFixed(2)} pts`
       : `${entry.percentage.toFixed(2)}%`;
   const changeClass =
     typeof entry.change === 'number' && entry.change !== 0
@@ -50,11 +50,11 @@ const InventoryLogItem = ({ entry }: { entry: ActivityEntry }) => {
 
 const Index = () => {
   const resourcesRecord = useResourceStore((state) => state.resources);
-  const requestResupply = useResourceStore((state) => state.requestResupply);
   const criticalQueue = useResourceStore((state) => state.criticalQueue);
   const clearCriticalAlerts = useResourceStore(
     (state) => state.clearCriticalAlerts,
   );
+  const population = useResourceStore((state) => state.population);
   const activityLog = useResourceStore((state) => state.activityLog);
   const { toast } = useToast();
   const [alerts, setAlerts] = useState<AlertEntry[]>([]);
@@ -62,6 +62,14 @@ const Index = () => {
   const resourceList = useMemo(
     () => Object.values(resourcesRecord),
     [resourcesRecord],
+  );
+  const minimumSummary = useMemo(
+    () =>
+      resourceList.map(
+        (resource) =>
+          `${resource.name}: ${resource.currentPercentage.toFixed(1)}% (umbral ${resource.criticalPercentage}%)`,
+      ),
+    [resourceList],
   );
 
 
@@ -95,14 +103,6 @@ const Index = () => {
     clearCriticalAlerts();
   }, [criticalQueue, toast, clearCriticalAlerts]);
 
-  const handleResupply = (resourceId: string, resourceName: string) => {
-    requestResupply(resourceId);
-    toast({
-      title: '📦 Solicitud enviada',
-      description: `Resupply de ${resourceName} solicitado exitosamente`,
-    });
-  };
-
   return (
     <div className="min-h-screen">
       <Header />
@@ -130,9 +130,6 @@ const Index = () => {
             <ResourceCard
               key={resource.id}
               resource={resource}
-              onRequestResupply={() =>
-                handleResupply(resource.id, resource.name)
-              }
             />
           ))}
         </div>
@@ -183,7 +180,16 @@ const Index = () => {
 
 
         {/* Footer Info */}
-        <div className="glass p-4 rounded-lg text-center text-sm text-muted-foreground">
+        <div className="glass p-4 rounded-lg text-center text-sm text-muted-foreground space-y-2">
+          <p className="font-mono">
+            👥 Población activa: {population} colonos
+          </p>
+          <p className="font-mono">
+            ⚖️ Masa mínima vital:{' '}
+            {minimumSummary.length > 0
+              ? minimumSummary.join(' • ')
+              : 'Sin recursos registrados'}
+          </p>
           <p className="font-mono">
             🛰️ Sistema sincronizado con Tierra • Latencia: ~3-22 min • Próxima ventana de comunicación: 04:23 UTC
           </p>

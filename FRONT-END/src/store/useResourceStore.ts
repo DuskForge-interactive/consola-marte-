@@ -14,13 +14,6 @@ export interface ActivityEntry {
   isCritical: boolean;
 }
 
-export interface ResupplyRequest {
-  id: string;
-  resourceId: string;
-  timestamp: string;
-  status: 'pending' | 'confirmed' | 'completed';
-}
-
 export type ConnectionStatus =
   | 'idle'
   | 'connecting'
@@ -30,18 +23,18 @@ export type ConnectionStatus =
 
 interface ResourceState {
   resources: Record<string, ResourceCard>;
-  resupplyRequests: ResupplyRequest[];
   criticalQueue: ResourceCard[];
   connectionStatus: ConnectionStatus;
   activityLog: ActivityEntry[];
+  population: number;
   setResources: (resources: ResourceCard[]) => void;
   upsertResource: (resource: ResourceCard) => void;
   bulkUpdate: (resources: ResourceCard[]) => void;
-  requestResupply: (resourceId: string) => void;
   addCriticalAlert: (resource: ResourceCard) => void;
   clearCriticalAlerts: () => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
   removeResource: (resourceId: string) => void;
+  setPopulation: (population: number) => void;
 }
 
 const toRecord = (items: ResourceCard[]) =>
@@ -52,10 +45,10 @@ const toRecord = (items: ResourceCard[]) =>
 
 export const useResourceStore = create<ResourceState>((set) => ({
   resources: {},
-  resupplyRequests: [],
   criticalQueue: [],
   connectionStatus: 'idle',
   activityLog: [],
+  population: 128,
   setResources: (items) =>
     set({
       resources: toRecord(items),
@@ -143,18 +136,6 @@ export const useResourceStore = create<ResourceState>((set) => ({
         resources: rest,
       };
     }),
-  requestResupply: (resourceId) =>
-    set((state) => ({
-      resupplyRequests: [
-        ...state.resupplyRequests,
-        {
-          id: `req-${Date.now()}`,
-          resourceId,
-          timestamp: new Date().toISOString(),
-          status: 'pending',
-        },
-      ],
-    })),
   addCriticalAlert: (resource) =>
     set((state) => ({
       criticalQueue: [...state.criticalQueue, resource],
@@ -166,5 +147,9 @@ export const useResourceStore = create<ResourceState>((set) => ({
   setConnectionStatus: (status) =>
     set({
       connectionStatus: status,
+    }),
+  setPopulation: (population) =>
+    set({
+      population,
     }),
 }));

@@ -4,7 +4,6 @@ import { useResourceStore } from '@/store/useResourceStore';
 
 export const StatsOverview = () => {
   const resourcesRecord = useResourceStore((state) => state.resources);
-  const resupplyRequests = useResourceStore((state) => state.resupplyRequests);
 
   const resourceList = useMemo(
     () => Object.values(resourcesRecord),
@@ -20,9 +19,7 @@ export const StatsOverview = () => {
         ) / resourceList.length;
 
   const criticalCount = resourceList.filter((r) => r.isCritical).length;
-  const pendingRequests = resupplyRequests.filter(
-    (request) => request.status === 'pending',
-  ).length;
+  const monitoredResources = resourceList.length;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -66,10 +63,10 @@ export const StatsOverview = () => {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-muted-foreground mb-1">
-              Resupply pendientes
+              Recursos monitoreados
             </p>
             <p className="text-2xl font-bold text-warning">
-              {pendingRequests}
+              {monitoredResources}
             </p>
           </div>
           <Package className="h-8 w-8 text-warning" />
