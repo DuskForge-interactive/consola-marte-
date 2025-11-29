@@ -27,7 +27,10 @@ export class ResourcesGateway {
       const resources = await this.resourcesService.getAllForDashboard();
       client.emit('initialState', resources);
     } catch (error) {
-      this.logger.error('Failed to send initial resource state', error as Error);
+      this.logger.error(
+        'Failed to send initial resource state',
+        error as Error,
+      );
       client.emit('error', 'Unable to retrieve resources');
     }
   }

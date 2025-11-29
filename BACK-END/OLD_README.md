@@ -22,6 +22,7 @@ API en NestJS que envía el estado de los recursos vitales en Marte para que los
    DATABASE_URL=postgresql://postgres:<pwd>@db.<hash>.supabase.co:5432/postgres
    PORT=3001
    ```
+   > El servicio `ResourcesRealtimeService` escucha cambios en `resource_status` usando Supabase Realtime, por lo que **SUPABASE_URL** y **SUPABASE_SERVICE_ROLE** (o `SUPABASE_ANON_KEY` si prefieres) deben estar presentes para que la consola reciba actualizaciones en caliente.
 3. Sincroniza el esquema (`npx prisma migrate dev`) o ejecuta los scripts SQL de `supabase/schema`.
 4. Levanta la API: `npm run start:dev`.
 

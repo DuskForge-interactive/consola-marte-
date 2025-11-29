@@ -4,31 +4,11 @@ import { useResourceStore } from "@/store/useResourceStore";
 import { Header } from "@/components/Header";
 import { AlertBanner } from "@/components/AlertBanner";
 import { Button } from "@/components/ui/button";
-import { LineChart, Line, ResponsiveContainer, XAxis } from "recharts";
 import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { fetchResourceByCode, type ResourceCard } from "@/lib/api";
-
-type LogEntry = {
-  id: string;
-  timestamp: string;
-  message: string;
-};
-
-const generarMensajeDummy = () => {
-  const mensajes = [
-    "Ajuste automático detectado.",
-    "Lectura de sensores recalibrada.",
-    "Movimiento registrado en el módulo.",
-    "Nueva telemetría recibida desde órbita.",
-    "Nivel ajustado por ciclo de consumo.",
-    "Sincronización completada.",
-    "Modificación registrada en el sistema.",
-    "Análisis interno actualizado."
-  ];
-
-  return mensajes[Math.floor(Math.random() * mensajes.length)];
-};
+import { ResourceHistoryChart } from "@/components/ResourceHistoryChart";
+import { useResourceHistory } from "@/hooks/use-resource-history";
 
 const ResourcePage = () => {
   const { id } = useParams();
@@ -42,22 +22,12 @@ const ResourcePage = () => {
   const [loading, setLoading] = useState(!resourceFromStore);
   const resource = resourceFromStore ?? fetchedResource;
 
-  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [alerts, setAlerts] = useState<string[]>([]);
-
-  // Dummy logs by websocket simulation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const log: LogEntry = {
-        id: crypto.randomUUID(),
-        timestamp: new Date().toLocaleTimeString(),
-        message: generarMensajeDummy()
-      };
-      setLogs(prev => [log, ...prev]);
-    }, Math.random() * 2000 + 2000);
-
-    return () => clearInterval(interval);
-  }, []);
+  const {
+    points: historyPoints,
+    loading: historyLoading,
+    error: historyError,
+  } = useResourceHistory(resource?.id);
 
   useEffect(() => {
     if (resourceFromStore || !code) return;
@@ -123,20 +93,14 @@ const ResourcePage = () => {
   }
 
   const percentage = resource.currentPercentage;
-  const chartData = useMemo(() => {
-    const values: number[] = [];
-    for (let i = 5; i >= 0; i -= 1) {
-      const nextValue = Math.max(
-        0,
-        resource.currentPercentage - i * resource.consumptionRatePerMinute
-      );
-      values.push(Number(nextValue.toFixed(2)));
-    }
-    return values.map((value, index) => ({
-      label: `T-${values.length - index}`,
-      value,
-    }));
-  }, [resource]);
+  const timeline = useMemo(
+    () =>
+      [...historyPoints].sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      ),
+    [historyPoints]
+  );
 
   return (
     <div className="min-h-screen">
@@ -185,24 +149,12 @@ const ResourcePage = () => {
               )}
             </div>
 
-            {/* Gráfica */}
-            <div className="h-56 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <XAxis
-                    dataKey="label"
-                    tick={{ fontSize: 12, fill: 'currentColor' }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="currentColor"
-                    strokeWidth={3}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <ResourceHistoryChart
+              title="Historial de mediciones"
+              loading={historyLoading}
+              error={historyError}
+              points={historyPoints}
+            />
 
             {/* Botón de resupply */}
             <Button
@@ -219,14 +171,37 @@ const ResourcePage = () => {
               </h2>
 
               <div className="h-[250px] overflow-y-auto space-y-2">
-                {logs.map(log => (
+                {historyLoading && (
+                  <p className="text-sm text-muted-foreground">
+                    Cargando historial...
+                  </p>
+                )}
+
+                {historyError && !historyLoading && (
+                  <p className="text-sm text-destructive">{historyError}</p>
+                )}
+
+                {!historyLoading && timeline.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Sin eventos registrados aún.
+                  </p>
+                )}
+
+                {timeline.map((entry, index) => (
                   <div
-                    key={log.id}
-                    className="p-2 rounded-md bg-secondary text-sm font-mono shadow-sm"
+                    key={`${entry.timestamp}-${index}`}
+                    className="p-2 rounded-md bg-secondary text-sm font-mono shadow-sm flex items-center justify-between"
                   >
-                    <span className="text-xs opacity-70">{log.timestamp}</span>
-                    <br />
-                    {log.message}
+                    <div>
+                      <span className="text-xs opacity-70">
+                        {new Date(entry.timestamp).toLocaleString()}
+                      </span>
+                      <br />
+                      {entry.isCritical ? "⚠️ Crítico" : "✅ Estable"}
+                    </div>
+                    <div className="font-semibold">
+                      {entry.percentage.toFixed(2)}%
+                    </div>
                   </div>
                 ))}
               </div>

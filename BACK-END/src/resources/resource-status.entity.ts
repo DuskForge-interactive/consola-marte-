@@ -3,9 +3,11 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { ResourceKind } from './resource-kind.entity';
+import { ResourceHistory } from './resource-history.entity';
 
 @Entity({ schema: 'mars_console', name: 'resource_status' })
 export class ResourceStatus {
@@ -33,4 +35,7 @@ export class ResourceStatus {
 
   @Column({ type: 'boolean', default: false })
   is_critical: boolean;
+
+  @OneToMany(() => ResourceHistory, (history) => history.status)
+  history: ResourceHistory[];
 }

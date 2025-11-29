@@ -5,17 +5,47 @@ import { AlertBanner } from '@/components/AlertBanner';
 import { Header } from '@/components/Header';
 import { StatsOverview } from '@/components/StatsOverview';
 import { useToast } from '@/hooks/use-toast';
-
-type LogEntry = {
-  id: string;
-  timestamp: string;
-  message: string;
-};
+import { ResourceManager } from '@/components/ResourceManager';
+import type { ActivityEntry } from '@/store/useResourceStore';
 
 type AlertEntry = {
   id: string;
   message: string;
   resourceName: string;
+};
+
+const InventoryLogItem = ({ entry }: { entry: ActivityEntry }) => {
+  const timestamp = new Date(entry.timestamp).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+  const change =
+    typeof entry.change === 'number' && entry.change !== 0
+      ? `${entry.change > 0 ? '+' : ''}${entry.change.toFixed(2)}%`
+      : `${entry.percentage.toFixed(2)}%`;
+  const changeClass =
+    typeof entry.change === 'number' && entry.change !== 0
+      ? entry.change > 0
+        ? 'text-success'
+        : 'text-destructive'
+      : entry.isCritical
+        ? 'text-critical'
+        : 'text-muted-foreground';
+
+  return (
+    <div className="p-3 rounded-md bg-secondary/60 text-sm shadow-sm flex items-center justify-between gap-4">
+      <div>
+        <p className="text-xs text-muted-foreground">
+          {timestamp} · {entry.resourceName}
+        </p>
+        <p className="font-mono">{entry.message}</p>
+      </div>
+      <div className={`text-right font-semibold ${changeClass}`}>
+        {change}
+      </div>
+    </div>
+  );
 };
 
 const Index = () => {
@@ -25,43 +55,15 @@ const Index = () => {
   const clearCriticalAlerts = useResourceStore(
     (state) => state.clearCriticalAlerts,
   );
+  const activityLog = useResourceStore((state) => state.activityLog);
   const { toast } = useToast();
   const [alerts, setAlerts] = useState<AlertEntry[]>([]);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
 
   const resourceList = useMemo(
     () => Object.values(resourcesRecord),
     [resourcesRecord],
   );
 
-  const generarMensajeDummy = () => {
-    const mensajes = [
-      'Oxígeno ajustado debido a variación de consumo.',
-      'Reserva de agua actualizada tras ciclo de purificación.',
-      'Revisión automática de filtros completada.',
-      'Módulo de energía registró un ligero descenso.',
-      'Nuevo paquete enviado desde plataforma orbital.',
-      'Sincronizando datos del inventario con estación base.',
-      'Análisis de nutrientes recalculado.',
-      'Movimiento detectado en el almacén 3.',
-    ];
-
-    return mensajes[Math.floor(Math.random() * mensajes.length)];
-  };
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const fakeLog: LogEntry = {
-        id: crypto.randomUUID(),
-        timestamp: new Date().toLocaleTimeString(),
-        message: generarMensajeDummy(),
-      };
-
-      setLogs((prev) => [fakeLog, ...prev]);
-    }, Math.random() * 2000 + 2000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const newAlerts = resourceList
@@ -134,6 +136,9 @@ const Index = () => {
             />
           ))}
         </div>
+
+        {/* Resource Manager */}
+        <ResourceManager />
      
           {/* Historial logs Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-10">
@@ -143,20 +148,15 @@ const Index = () => {
         <h2 className="text-xl font-semibold mb-3">📜 Historial de Inventario</h2>
 
         <div className="space-y-2">
-          {logs.length === 0 && (
-            <p className="text-sm text-muted-foreground">Cargando historial...</p>
+          {activityLog.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Aún no hay movimientos registrados.
+            </p>
+          ) : (
+            activityLog.map((entry) => (
+              <InventoryLogItem key={entry.id} entry={entry} />
+            ))
           )}
-
-          {logs.map((log) => (
-            <div
-              key={log.id}
-              className="p-2 rounded-md bg-secondary text-sm font-mono shadow-sm"
-            >
-              <span className="text-xs opacity-70">{log.timestamp}</span>
-              <br />
-              {log.message}
-            </div>
-          ))}
         </div>
       </div>
 

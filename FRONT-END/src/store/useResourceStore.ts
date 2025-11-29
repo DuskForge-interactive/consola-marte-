@@ -1,6 +1,19 @@
 import { create } from 'zustand';
 import type { ResourceCard } from '@/lib/api';
 
+const MAX_ACTIVITY_ENTRIES = 60;
+
+export interface ActivityEntry {
+  id: string;
+  timestamp: string;
+  resourceId: string;
+  resourceName: string;
+  message: string;
+  change?: number;
+  percentage: number;
+  isCritical: boolean;
+}
+
 export interface ResupplyRequest {
   id: string;
   resourceId: string;
@@ -20,6 +33,7 @@ interface ResourceState {
   resupplyRequests: ResupplyRequest[];
   criticalQueue: ResourceCard[];
   connectionStatus: ConnectionStatus;
+  activityLog: ActivityEntry[];
   setResources: (resources: ResourceCard[]) => void;
   upsertResource: (resource: ResourceCard) => void;
   bulkUpdate: (resources: ResourceCard[]) => void;
@@ -27,6 +41,7 @@ interface ResourceState {
   addCriticalAlert: (resource: ResourceCard) => void;
   clearCriticalAlerts: () => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
+  removeResource: (resourceId: string) => void;
 }
 
 const toRecord = (items: ResourceCard[]) =>
@@ -40,17 +55,80 @@ export const useResourceStore = create<ResourceState>((set) => ({
   resupplyRequests: [],
   criticalQueue: [],
   connectionStatus: 'idle',
+  activityLog: [],
   setResources: (items) =>
     set({
       resources: toRecord(items),
     }),
   upsertResource: (resource) =>
-    set((state) => ({
-      resources: {
+    set((state) => {
+      const previous = state.resources[resource.id];
+      const resources = {
         ...state.resources,
         [resource.id]: resource,
-      },
-    })),
+      };
+      let activityLog = state.activityLog;
+
+      const createEntry = (message: string, change?: number): ActivityEntry => ({
+        id: `${resource.id}-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        resourceId: resource.id,
+        resourceName: resource.name,
+        message,
+        change,
+        percentage: resource.currentPercentage,
+        isCritical: resource.isCritical,
+      });
+
+      if (!previous) {
+        activityLog = [
+          createEntry(
+            `${resource.name} registrado con ${resource.currentPercentage.toFixed(
+              2,
+            )}%`,
+          ),
+          ...activityLog,
+        ].slice(0, MAX_ACTIVITY_ENTRIES);
+      } else {
+        const delta = Number(
+          (resource.currentPercentage - previous.currentPercentage).toFixed(2),
+        );
+        const becameCritical = !previous.isCritical && resource.isCritical;
+        const recovered = previous.isCritical && !resource.isCritical;
+
+        if (delta !== 0 || becameCritical || recovered) {
+          let message: string;
+          if (delta > 0) {
+            message = `${resource.name} subió a ${resource.currentPercentage.toFixed(
+              2,
+            )}%`;
+          } else if (delta < 0) {
+            message = `${resource.name} bajó a ${resource.currentPercentage.toFixed(
+              2,
+            )}%`;
+          } else if (becameCritical) {
+            message = `${resource.name} entró en estado crítico`;
+          } else if (recovered) {
+            message = `${resource.name} salió del estado crítico`;
+          } else {
+            message = `${resource.name} actualizado`;
+          }
+
+          activityLog = [
+            createEntry(
+              message,
+              delta !== 0 ? delta : undefined,
+            ),
+            ...activityLog,
+          ].slice(0, MAX_ACTIVITY_ENTRIES);
+        }
+      }
+
+      return {
+        resources,
+        activityLog,
+      };
+    }),
   bulkUpdate: (items) =>
     set((state) => ({
       resources: {
@@ -58,6 +136,13 @@ export const useResourceStore = create<ResourceState>((set) => ({
         ...toRecord(items),
       },
     })),
+  removeResource: (resourceId) =>
+    set((state) => {
+      const { [resourceId]: _removed, ...rest } = state.resources;
+      return {
+        resources: rest,
+      };
+    }),
   requestResupply: (resourceId) =>
     set((state) => ({
       resupplyRequests: [

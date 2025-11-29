@@ -18,6 +18,29 @@ export interface ResourceCard {
   lastUpdated: string;
 }
 
+export interface ResourceHistoryPoint {
+  timestamp: string;
+  percentage: number;
+  isCritical: boolean;
+}
+
+export interface CreateResourcePayload {
+  code: string;
+  displayName: string;
+  currentPercentage: number;
+  criticalPercentage: number;
+  consumptionRatePerMinute: number;
+  isCritical?: boolean;
+}
+
+export interface UpdateResourcePayload {
+  displayName?: string;
+  currentPercentage?: number;
+  criticalPercentage?: number;
+  consumptionRatePerMinute?: number;
+  isCritical?: boolean;
+}
+
 export async function fetchResources(): Promise<ResourceCard[]> {
   const res = await api.get<ResourceCard[]>('/resources');
   return res.data;
@@ -25,5 +48,35 @@ export async function fetchResources(): Promise<ResourceCard[]> {
 
 export async function fetchResourceByCode(code: string): Promise<ResourceCard> {
   const res = await api.get<ResourceCard>(`/resources/${code}`);
+  return res.data;
+}
+
+export async function createResource(
+  payload: CreateResourcePayload,
+): Promise<ResourceCard> {
+  const res = await api.post<ResourceCard>('/resources', payload);
+  return res.data;
+}
+
+export async function updateResource(
+  code: string,
+  payload: UpdateResourcePayload,
+): Promise<ResourceCard> {
+  const res = await api.patch<ResourceCard>(`/resources/${code}`, payload);
+  return res.data;
+}
+
+export async function deleteResource(code: string): Promise<void> {
+  await api.delete(`/resources/${code}`);
+}
+
+export async function fetchResourceHistory(
+  code: string,
+  params?: { from?: string; to?: string },
+): Promise<ResourceHistoryPoint[]> {
+  const res = await api.get<ResourceHistoryPoint[]>(
+    `/resources/${code}/history`,
+    { params },
+  );
   return res.data;
 }
