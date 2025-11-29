@@ -2,7 +2,6 @@ import type { ResourceCard as ResourceCardDto } from '@/lib/api';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { AlertTriangle, TrendingDown } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 const RESOURCE_METADATA: Record<
   string,
@@ -22,7 +21,6 @@ interface ResourceCardProps {
 }
 
 export const ResourceCard = ({ resource }: ResourceCardProps) => {
-  const navigate = useNavigate();
   const metadata =
     RESOURCE_METADATA[resource.id] ?? ({
       icon: '🛰️',
@@ -59,10 +57,7 @@ export const ResourceCard = ({ resource }: ResourceCardProps) => {
   };
 
   return (
-    <div
-      onClick={() => navigate(`/resource/${resource.id}`)}
-      className="cursor-pointer"
-    >
+    <div className="block rounded-xl">
       <Card
         className={`glass-strong p-6 space-y-4 transition-all duration-300 hover:scale-[1.02] ${
           isCritical ? 'glow-critical border-critical/50' : ''
@@ -126,6 +121,6 @@ export const ResourceCard = ({ resource }: ResourceCardProps) => {
           </div>
         </div>
       </Card>
-    </div>
+      </div>
   );
 };
